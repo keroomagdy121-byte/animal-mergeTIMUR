@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مساعد دمج الحيوانات القتالي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;background:#0d0d1a;color:#f0e8d0;min-height:100vh;padding:16px}
+h1{text-align:center;font-size:20px;font-weight:700;color:#d4a843;margin-bottom:4px;letter-spacing:1px}
+.subtitle{text-align:center;font-size:12px;color:#8a7a5a;margin-bottom:14px}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:#1a1a2e;border:1px solid #2a2a3e;border-radius:10px;padding:8px;text-align:center}
+.stat-val{font-size:20px;font-weight:700;color:#d4a843}
+.stat-lbl{font-size:10px;color:#8a7a5a;margin-top:2px}
+
+.grid-wrap{display:flex;justify-content:center;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(4,72px);gap:5px}
+.cell{
+  width:72px;height:72px;border-radius:12px;border:2px solid #2a2a3e;
+  background:#1a1a2e;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;cursor:pointer;position:relative;transition:all 0.15s;
+  font-size:11px;color:#8a7a5a;
+}
+.cell.filled{background:#1e1e30;border-color:#3a3a5e}
+.cell:hover{border-color:#d4a843;transform:scale(1.04)}
+.cell.selected{border-color:#d4a843!important;background:#221e0a!important;box-shadow:0 0 12px rgba(212,168,67,0.4)}
+.cell.suggested{border-color:#4ade80!important;background:#0a1e10!important;animation:pulse 1s infinite alternate}
+.cell.merge-target{border-color:#f97316!important;background:#1e0d00!important}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(74,222,128,0.4)}to{box-shadow:0 0 0 8px rgba(74,222,128,0)}}
+.cell-emoji{font-size:30px;line-height:1}
+.cell-level{
+  position:absolute;bottom:3px;right:5px;
+  font-size:11px;font-weight:700;color:#d4a843;
+  background:#0d0d1a;border-radius:4px;padding:0 3px;
+}
+.cell-plus{font-size:22px;color:#2a2a3e}
+
+.edit-panel{
+  background:#1a1a2e;border:1px solid #2a2a3e;border-radius:14px;
+  padding:12px;margin-bottom:12px;display:none;
+}
+.edit-label{font-size:12px;color:#8a7a5a;margin-bottom:8px;text-align:center}
+.animal-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.ap-btn{
+  padding:6px 4px;border-radius:8px;border:1px solid #2a2a3e;
+  background:#0d0d1a;cursor:pointer;text-align:center;font-size:22px;transition:all 0.1s;
+}
+.ap-btn:hover{border-color:#d4a843}
+.ap-btn.active{border-color:#d4a843;background:#221e0a;box-shadow:0 0 8px rgba(212,168,67,0.3)}
+.level-pick{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.lv-btn{
+  width:30px;height:30px;border-radius:7px;border:1px solid #2a2a3e;
+  background:#0d0d1a;cursor:pointer;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;color:#f0e8d0;transition:all 0.1s;
+  font-family:'Cairo',sans-serif;
+}
+.lv-btn:hover{border-color:#d4a843}
+.lv-btn.active{background:#d4a843;color:#0d0d1a;border-color:#d4a843}
+.edit-actions{display:flex;gap:6px;justify-content:center}
+
+.btn-row{display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+button{
+  font-family:'Cairo',sans-serif;height:38px;padding:0 16px;border-radius:10px;
+  border:1px solid #2a2a3e;background:#1a1a2e;color:#f0e8d0;
+  font-size:13px;cursor:pointer;font-weight:500;transition:all 0.15s;
+}
+button:hover{border-color:#d4a843;background:#221e0a}
+button:active{transform:scale(0.97)}
+button.primary{background:#d4a843;color:#0d0d1a;border-color:#d4a843;font-weight:700}
+button.primary:hover{background:#e8bc50;border-color:#e8bc50}
+button.danger{background:#7f1d1d;color:#fca5a5;border-color:#991b1b}
+button.danger:hover{background:#991b1b}
+
+.advice-box{
+  background:#1a1a2e;border:1px solid #2a2a3e;border-radius:14px;
+  padding:14px;min-height:70px;
+}
+.advice-title{font-size:12px;color:#8a7a5a;margin-bottom:8px}
+.advice-empty{font-size:13px;color:#8a7a5a;text-align:center;padding:10px 0}
+.move-item{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;
+  background:#0d0d1a;border:1px solid #2a2a3e;margin-bottom:6px;cursor:pointer;
+  transition:border-color 0.15s;
+}
+.move-item:hover{border-color:#d4a843}
+.move-rank{font-size:11px;font-weight:700;color:#8a7a5a;min-width:18px;text-align:center}
+.move-emoji{font-size:20px}
+.move-desc{font-size:12px;color:#f0e8d0;flex:1;line-height:1.5}
+.move-sub{font-size:10px;color:#8a7a5a}
+.move-pts{font-size:13px;font-weight:700;color:#4ade80}
+
+.legend{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#8a7a5a}
+.legend-dot{width:12px;height:12px;border-radius:3px;border:2px solid}
+
+.no-moves{
+  text-align:center;padding:14px;
+  background:#1e0d00;border-radius:10px;
+  color:#f97316;font-size:13px;border:1px solid #7c2d12;
+}
+</style>
+</head>
+<body>
+
+<h1>⚔️ مساعد الدمج القتالي</h1>
+<p class="subtitle">أدخل الشبكة واضغط تحليل — هيقولك أحسن حركة</p>
+
+<div class="stats">
+  <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">نقاط الشبكة</div></div>
+  <div class="stat"><div class="stat-val" id="s-moves">0</div><div class="stat-lbl">حركات ممكنة</div></div>
+  <div class="stat"><div class="stat-val" id="s-best">-</div><div class="stat-lbl">أعلى مستوى</div></div>
+</div>
+
+<div class="grid-wrap"><div class="grid" id="grid"></div></div>
+
+<div class="edit-panel" id="editPanel">
+  <div class="edit-label">اختار الحيوان:</div>
+  <div class="animal-picker" id="animalPicker"></div>
+  <div class="edit-label">اختار المستوى:</div>
+  <div class="level-pick" id="levelPick"></div>
+  <div class="edit-actions">
+    <button class="danger" id="clearCell">مسح</button>
+    <button id="closeEdit">إغلاق</button>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="analyzeBtn">🔍 تحليل وأحسن حركة</button>
+  <button id="loadSampleBtn">📋 مثال</button>
+  <button class="danger" id="resetBtn">🗑️ مسح الكل</button>
+</div>
+
+<div class="advice-box" id="adviceBox">
+  <div class="advice-title">النتيجة</div>
+  <div class="advice-empty" id="adviceContent">اضغط على الخلايا عشان تملأ الشبكة، ثم اضغط "تحليل"</div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="border-color:#4ade80;background:#0a1e10"></div>أحسن حركة (المصدر)</div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#f97316;background:#1e0d00"></div>الهدف</div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#d4a843;background:#221e0a"></div>محدد</div>
+</div>
+
+<script>
+const ANIMALS=[
+  {emoji:"🐪",name:"جمل"},
+  {emoji:"🦅",name:"عقاب"},
+  {emoji:"🦁",name:"أسد"},
+  {emoji:"🐆",name:"فهد"},
+  {emoji:"🐺",name:"ذئب"},
+  {emoji:"🐉",name:"تنين"},
+  {emoji:"🐴",name:"حصان"},
+  {emoji:"🦛",name:"وحيد القرن"},
+  {emoji:"🐘",name:"فيل"},
+  {emoji:"🦕",name:"ديناصور"},
+  {emoji:"🦍",name:"غوريلا"},
+];
+const POINTS={1:2,2:4,3:8,4:16,5:32,6:64,7:128,8:256,9:512,10:1024,11:2048};
+const ROWS=4,COLS=4;
+let grid=Array(ROWS).fill(null).map(()=>Array(COLS).fill(null));
+let selectedCell=null,pickedAnimal=0,pickedLevel=1;
+
+function initGrid(){
+  const g=document.getElementById("grid");
+  g.innerHTML="";
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const el=document.createElement("div");
+    el.className="cell";el.id=`c${r}_${c}`;
+    el.onclick=()=>selectCell(r,c);
+    g.appendChild(el);
+  }
+  renderGrid();
+}
+
+function renderGrid(){
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const el=document.getElementById(`c${r}_${c}`);
+    const v=grid[r][c];
+    let cls="cell"+(v?" filled":"");
+    if(selectedCell&&selectedCell[0]===r&&selectedCell[1]===c) cls+=" selected";
+    el.className=cls;
+    el.innerHTML=v
+      ?`<span class="cell-emoji">${ANIMALS[v.a].emoji}</span><span class="cell-level">${v.l}</span>`
+      :`<span class="cell-plus">+</span>`;
+  }
+  updateStats();
+}
+
+function clearHighlights(){
+  document.querySelectorAll(".suggested,.merge-target").forEach(el=>{
+    el.classList.remove("suggested","merge-target");
+  });
+}
+
+function selectCell(r,c){
+  clearHighlights();
+  selectedCell=[r,c];
+  const v=grid[r][c];
+  if(v){pickedAnimal=v.a;pickedLevel=v.l;}
+  renderGrid();
+  document.getElementById("editPanel").style.display="block";
+  buildAnimalPicker();buildLevelPick();
+}
+
+function updateStats(){
+  let pts=0,best=0;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(grid[r][c]){pts+=POINTS[grid[r][c].l]||0;if(grid[r][c].l>best)best=grid[r][c].l;}
+  }
+  const moves=findAllMoves();
+  document.getElementById("s-total").textContent=pts;
+  document.getElementById("s-moves").textContent=moves.length;
+  document.getElementById("s-best").textContent=best||"-";
+}
+
+function isAdjacent(r1,c1,r2,c2){
+  return(Math.abs(r1-r2)===1&&c1===c2)||(Math.abs(c1-c2)===1&&r1===r2);
+}
+
+function findAllMoves(){
+  const moves=[],seen=new Set();
+  for(let r1=0;r1<ROWS;r1++) for(let c1=0;c1<COLS;c1++){
+    if(!grid[r1][c1]) continue;
+    for(let r2=0;r2<ROWS;r2++) for(let c2=0;c2<COLS;c2++){
+      if((r1===r2&&c1===c2)||!grid[r2][c2]) continue;
+      if(!isAdjacent(r1,c1,r2,c2)) continue;
+      if(grid[r1][c1].l===grid[r2][c2].l&&grid[r1][c1].a===grid[r2][c2].a){
+        const key=[r1,c1,r2,c2].sort().join("-");
+        if(seen.has(key)) continue;
+        seen.add(key);
+        const newL=grid[r1][c1].l+1;
+        const pts=POINTS[newL]||newL*256;
+        moves.push({r1,c1,r2,c2,pts,newL,a:grid[r1][c1].a});
+      }
+    }
+  }
+  return moves.sort((a,b)=>b.pts-a.pts);
+}
+
+function analyze(){
+  clearHighlights();
+  const moves=findAllMoves();
+  const box=document.getElementById("adviceContent");
+  if(moves.length===0){
+    box.innerHTML=`<div class="no-moves">❌ مفيش حركات ممكنة دلوقتي<br><small>محتاج حيوانين متجاورين من نفس النوع والمستوى</small></div>`;
+    return;
+  }
+  const e1=document.getElementById(`c${moves[0].r1}_${moves[0].c1}`);
+  const e2=document.getElementById(`c${moves[0].r2}_${moves[0].c2}`);
+  e1.classList.add("suggested");e2.classList.add("merge-target");
+  const top=moves.slice(0,5);
+  const dirs=(r1,c1,r2,c2)=>c2>c1?"يمين →":c2<c1?"← يسار":r2>r1?"↓ أسفل":"↑ أعلى";
+  let html=`<div class="advice-title">أفضل ${Math.min(moves.length,5)} حركات من أصل ${moves.length}:</div>`;
+  html+=top.map((m,i)=>`
+    <div class="move-item" onclick="hlMove(${m.r1},${m.c1},${m.r2},${m.c2})">
+      <span class="move-rank">${i+1}</span>
+      <span class="move-emoji">${ANIMALS[m.a].emoji}</span>
+      <span class="move-desc">
+        صف${m.r1+1} عمود${m.c1+1} ${dirs(m.r1,m.c1,m.r2,m.c2)}
+        <br><span class="move-sub">${ANIMALS[m.a].name} ${m.newL-1}+${m.newL-1} = مستوى ${m.newL}</span>
+      </span>
+      <span class="move-pts">+${m.pts}</span>
+    </div>`).join("");
+  box.innerHTML=html;
+}
+
+window.hlMove=function(r1,c1,r2,c2){
+  clearHighlights();
+  document.getElementById(`c${r1}_${c1}`).classList.add("suggested");
+  document.getElementById(`c${r2}_${c2}`).classList.add("merge-target");
+};
+
+function buildAnimalPicker(){
+  document.getElementById("animalPicker").innerHTML=ANIMALS.map((a,i)=>
+    `<div class="ap-btn${i===pickedAnimal?" active":""}" onclick="pickAnimal(${i})" title="${a.name}">${a.emoji}</div>`
+  ).join("");
+}
+
+function buildLevelPick(){
+  document.getElementById("levelPick").innerHTML=Array.from({length:11},(_,i)=>i+1).map(l=>
+    `<div class="lv-btn${l===pickedLevel?" active":""}" onclick="pickLevel(${l})">${l}</div>`
+  ).join("");
+}
+
+window.pickAnimal=function(i){
+  pickedAnimal=i;
+  if(selectedCell){grid[selectedCell[0]][selectedCell[1]]={a:pickedAnimal,l:pickedLevel};renderGrid();}
+  buildAnimalPicker();
+};
+window.pickLevel=function(l){
+  pickedLevel=l;
+  if(selectedCell){grid[selectedCell[0]][selectedCell[1]]={a:pickedAnimal,l:pickedLevel};renderGrid();}
+  buildLevelPick();
+};
+
+document.getElementById("clearCell").onclick=()=>{
+  if(selectedCell){grid[selectedCell[0]][selectedCell[1]]=null;renderGrid();}
+};
+document.getElementById("closeEdit").onclick=()=>{
+  selectedCell=null;document.getElementById("editPanel").style.display="none";renderGrid();
+};
+document.getElementById("analyzeBtn").onclick=analyze;
+document.getElementById("resetBtn").onclick=()=>{
+  grid=Array(ROWS).fill(null).map(()=>Array(COLS).fill(null));
+  clearHighlights();renderGrid();
+  document.getElementById("adviceContent").innerHTML='<div class="advice-empty">اضغط على الخلايا عشان تملأ الشبكة، ثم اضغط "تحليل"</div>';
+};
+document.getElementById("loadSampleBtn").onclick=()=>{
+  grid=[
+    [{a:2,l:2},{a:0,l:4},{a:2,l:3},{a:0,l:2}],
+    [{a:0,l:4},{a:0,l:2},{a:7,l:8},{a:4,l:5}],
+    [{a:0,l:2},{a:5,l:6},{a:2,l:4},{a:1,l:1}],
+    [{a:1,l:1},{a:0,l:2},{a:1,l:1},{a:0,l:2}],
+  ];
+  clearHighlights();renderGrid();
+  document.getElementById("adviceContent").innerHTML='<div class="advice-empty">اضغط "تحليل" لتحليل الشبكة</div>';
+};
+
+buildAnimalPicker();buildLevelPick();initGrid();
+</script>
+</body>
+</html>
